@@ -21,12 +21,10 @@ fn main() {
     let mut sim = Simulation::new(seed);
 
     let (node1, _node1_id) = create_node(&mut sim, "node1", seed);
-    let (node2, node2_id) = create_node(&mut sim, "node2", seed);
+    let (node2, _node2_id) = create_node(&mut sim, "node2", seed);
 
     node1.borrow_mut().mine_block();
     node2.borrow_mut().mine_block();
-
-    node1.borrow_mut().send_ping(node2_id);
 
     sim.step_until_no_events();
 

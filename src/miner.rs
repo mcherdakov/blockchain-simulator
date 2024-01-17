@@ -24,7 +24,7 @@ impl Uniform {
 
     pub fn mine(&mut self) -> MineResult {
         MineResult {
-            block: Block::default(),
+            block: Block::random(&mut self.rng),
             delay: self.rng.gen_range(self.delay_from..=self.delay_to),
         }
     }
