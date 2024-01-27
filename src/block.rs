@@ -2,7 +2,7 @@ use rand::distributions::{Alphanumeric, DistString};
 use rand_chacha::ChaCha8Rng;
 use serde::Serialize;
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Debug, Serialize, Hash, Eq, PartialEq)]
 pub struct BlockID {
     hash: String,
 }
@@ -15,7 +15,7 @@ impl BlockID {
     }
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Block {
     pub id: BlockID,
 }

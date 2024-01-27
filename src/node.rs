@@ -1,18 +1,19 @@
-use crate::events::BlockMined;
 use crate::miner::Uniform;
+use crate::{block_storage::BlockStorage, events::BlockMined};
 use dslab_core::{cast, Event, EventHandler, SimulationContext};
 
 const MINE_DELAY_FROM: f64 = 2.0;
 const MINE_DELAY_TO: f64 = 5.0;
 
 #[derive(Default, Debug)]
-pub struct Data {
+pub struct Stats {
     pub blocks_mined: u32,
 }
 
 pub struct Node {
     ctx: SimulationContext,
-    data: Data,
+    stats: Stats,
+    block_storage: BlockStorage,
     miner: Uniform,
 }
 
@@ -22,7 +23,8 @@ impl Node {
 
         Self {
             ctx,
-            data: Data::default(),
+            stats: Stats::default(),
+            block_storage: BlockStorage::new(),
             miner: Uniform::new(seed, MINE_DELAY_FROM, MINE_DELAY_TO),
         }
     }
@@ -38,16 +40,21 @@ impl Node {
         );
     }
 
-    pub fn data(&self) -> &Data {
-        &self.data
+    pub fn stats(&self) -> &Stats {
+        &self.stats
+    }
+
+    pub fn storage(&self) -> &BlockStorage {
+        &self.block_storage
     }
 }
 
 impl EventHandler for Node {
     fn on(&mut self, event: Event) {
         cast!(match event.data {
-            BlockMined { .. } => {
-                self.data.blocks_mined += 1;
+            BlockMined { block } => {
+                self.stats.blocks_mined += 1;
+                self.block_storage.add(block);
 
                 if self.ctx.time() < 10.0 {
                     self.mine_block();

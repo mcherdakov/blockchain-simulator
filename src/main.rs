@@ -1,4 +1,5 @@
 mod block;
+mod block_storage;
 mod events;
 mod miner;
 mod node;
@@ -28,6 +29,14 @@ fn main() {
 
     sim.step_until_no_events();
 
-    println!("node1: {:?}", node1.borrow().data());
-    println!("node2: {:?}", node2.borrow().data());
+    println!(
+        "node1:\n stats: {:?}\n storage: {:?}",
+        node1.borrow().stats(),
+        node1.borrow().storage()
+    );
+    println!(
+        "node2:\n stats: {:?}\n storage: {:?}",
+        node2.borrow().stats(),
+        node2.borrow().storage()
+    );
 }
