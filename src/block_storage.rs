@@ -26,7 +26,7 @@ mod tests {
     use rand_chacha::ChaCha8Rng;
 
     #[test]
-    fn add() {
+    fn add_inserts_value() {
         let mut block_storage = BlockStorage::new();
 
         let mut rng = ChaCha8Rng::seed_from_u64(64);
