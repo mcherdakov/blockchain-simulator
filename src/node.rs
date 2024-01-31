@@ -1,6 +1,10 @@
+use std::collections::HashSet;
+
+use crate::block::Block;
+use crate::events::Inv;
 use crate::miner::Uniform;
 use crate::{block_storage::BlockStorage, events::BlockMined};
-use dslab_core::{cast, Event, EventHandler, SimulationContext};
+use dslab_core::{cast, Event, EventHandler, Id, SimulationContext};
 
 const MINE_DELAY_FROM: f64 = 2.0;
 const MINE_DELAY_TO: f64 = 5.0;
@@ -15,6 +19,7 @@ pub struct Node {
     stats: Stats,
     block_storage: BlockStorage,
     miner: Uniform,
+    peers: HashSet<Id>,
 }
 
 impl Node {
@@ -26,10 +31,27 @@ impl Node {
             stats: Stats::default(),
             block_storage: BlockStorage::new(),
             miner: Uniform::new(seed, MINE_DELAY_FROM, MINE_DELAY_TO),
+            peers: HashSet::new(),
         }
     }
 
-    pub fn mine_block(&mut self) {
+    pub fn add_peers(&mut self, peers: &[Id]) {
+        self.peers.extend(peers.iter());
+    }
+
+    pub fn start(&mut self) {
+        self.mine_block();
+    }
+
+    pub fn stats(&self) -> &Stats {
+        &self.stats
+    }
+
+    pub fn storage(&self) -> &BlockStorage {
+        &self.block_storage
+    }
+
+    fn mine_block(&mut self) {
         let mine_result = self.miner.mine();
         self.ctx.emit(
             BlockMined {
@@ -40,12 +62,25 @@ impl Node {
         );
     }
 
-    pub fn stats(&self) -> &Stats {
-        &self.stats
-    }
+    fn handle_block_mined(&mut self, block: Block) {
+        let block_id = block.id.clone();
 
-    pub fn storage(&self) -> &BlockStorage {
-        &self.block_storage
+        self.stats.blocks_mined += 1;
+        self.block_storage.add(block);
+
+        if self.ctx.time() < 10.0 {
+            self.mine_block();
+        }
+
+        for &peer in self.peers.iter() {
+            self.ctx.emit(
+                Inv {
+                    block_id: block_id.clone(),
+                },
+                peer,
+                0.0,
+            );
+        }
     }
 }
 
@@ -53,12 +88,7 @@ impl EventHandler for Node {
     fn on(&mut self, event: Event) {
         cast!(match event.data {
             BlockMined { block } => {
-                self.stats.blocks_mined += 1;
-                self.block_storage.add(block);
-
-                if self.ctx.time() < 10.0 {
-                    self.mine_block();
-                }
+                self.handle_block_mined(block)
             }
         })
     }
