@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
-use crate::block::Block;
-use crate::events::Inv;
+use crate::block::{Block, BlockID};
+use crate::events::{BlockData, GetData, Inv};
 use crate::miner::Uniform;
 use crate::{block_storage::BlockStorage, events::BlockMined};
 use dslab_core::{cast, Event, EventHandler, Id, SimulationContext};
@@ -82,13 +82,51 @@ impl Node {
             );
         }
     }
+
+    fn handle_inv(&mut self, block_id: BlockID, src: u32) {
+        if self.block_storage.contains(&block_id) {
+            return;
+        }
+
+        self.ctx.emit(GetData { block_id }, src, 0.0);
+    }
+
+    fn handle_get_data(&self, block_id: BlockID, src: u32) {
+        if let Some(block) = self.block_storage.block(&block_id) {
+            self.ctx.emit(BlockData { block }, src, 0.0);
+        }
+    }
+
+    fn handle_block_data(&mut self, block: Block, src: u32) {
+        let block_id = block.id.clone();
+        self.block_storage.add(block);
+
+        for &peer in self.peers.iter().filter(|&&peer| peer != src) {
+            self.ctx.emit(
+                Inv {
+                    block_id: block_id.clone(),
+                },
+                peer,
+                0.0,
+            );
+        }
+    }
 }
 
 impl EventHandler for Node {
     fn on(&mut self, event: Event) {
         cast!(match event.data {
             BlockMined { block } => {
-                self.handle_block_mined(block)
+                self.handle_block_mined(block);
+            }
+            Inv { block_id } => {
+                self.handle_inv(block_id, event.src);
+            }
+            GetData { block_id } => {
+                self.handle_get_data(block_id, event.src);
+            }
+            BlockData { block } => {
+                self.handle_block_data(block, event.src);
             }
         })
     }

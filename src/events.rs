@@ -10,3 +10,13 @@ pub struct BlockMined {
 pub struct Inv {
     pub block_id: BlockID,
 }
+
+#[derive(Clone, Serialize)]
+pub struct GetData {
+    pub block_id: BlockID,
+}
+
+#[derive(Clone, Serialize)]
+pub struct BlockData {
+    pub block: Block,
+}
