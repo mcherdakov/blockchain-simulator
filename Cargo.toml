@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 dslab-core = { git = "https://github.com/osukhoroslov/dslab.git" }
+dslab-mp = { git = "https://github.com/osukhoroslov/dslab.git" }
 rand = { version = "0.8.5"}
 rand_chacha = "0.3.1"
 serde = { version = "1.0.195", features = ["derive"] }

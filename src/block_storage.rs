@@ -25,6 +25,10 @@ impl BlockStorage {
     pub fn block(&self, block_id: &BlockID) -> Option<Block> {
         self.blocks.get(block_id).cloned()
     }
+
+    pub fn size(&self) -> usize {
+        self.blocks.len()
+    }
 }
 
 #[cfg(test)]

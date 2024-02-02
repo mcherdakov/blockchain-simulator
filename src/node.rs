@@ -6,8 +6,8 @@ use crate::miner::Uniform;
 use crate::{block_storage::BlockStorage, events::BlockMined};
 use dslab_core::{cast, Event, EventHandler, Id, SimulationContext};
 
-const MINE_DELAY_FROM: f64 = 2.0;
-const MINE_DELAY_TO: f64 = 5.0;
+const MINE_DELAY_FROM: f64 = 1.0;
+const MINE_DELAY_TO: f64 = 2.0;
 
 #[derive(Default, Debug)]
 pub struct Stats {
@@ -51,6 +51,10 @@ impl Node {
         &self.block_storage
     }
 
+    pub fn id(&self) -> Id {
+        self.ctx.id()
+    }
+
     fn mine_block(&mut self) {
         let mine_result = self.miner.mine();
         self.ctx.emit(
@@ -68,10 +72,6 @@ impl Node {
         self.stats.blocks_mined += 1;
         self.block_storage.add(block);
 
-        if self.ctx.time() < 10.0 {
-            self.mine_block();
-        }
-
         for &peer in self.peers.iter() {
             self.ctx.emit(
                 Inv {
@@ -81,9 +81,13 @@ impl Node {
                 0.0,
             );
         }
+
+        self.mine_block();
     }
 
     fn handle_inv(&mut self, block_id: BlockID, src: u32) {
+        self.add_peers(&[src]);
+
         if self.block_storage.contains(&block_id) {
             return;
         }
