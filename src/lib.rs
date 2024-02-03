@@ -1,17 +1,15 @@
 mod block;
 mod block_storage;
+mod config;
 mod events;
 mod miner;
 mod node;
 
+pub use config::Config;
 use dslab_core::Simulation;
 use node::Node;
 use std::cell::RefCell;
 use std::rc::Rc;
-
-pub struct Config {
-    pub seed: u64,
-}
 
 fn create_node(sim: &mut Simulation, name: &str, seed: u64) -> Rc<RefCell<Node>> {
     let node = Rc::new(RefCell::new(Node::new(sim.create_context(name), seed)));

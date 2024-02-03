@@ -11,3 +11,5 @@ dslab-mp = { git = "https://github.com/osukhoroslov/dslab.git" }
 rand = { version = "0.8.5"}
 rand_chacha = "0.3.1"
 serde = { version = "1.0.195", features = ["derive"] }
+serde_yaml = "0.9"
+clap = { version = "4.0", features = ["derive"] }
