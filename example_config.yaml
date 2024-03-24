@@ -1,1 +1,12 @@
 seed: 42
+nodes_config:
+  type: 'raw'
+  nodes:
+    - name: "1"
+      peers: ["2"]
+    - name: "2"
+      peers: ["3"]
+    - name: "3"
+      peers: ["4"]
+    - name: "4"
+      peers: ["1"]

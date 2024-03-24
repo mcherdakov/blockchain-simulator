@@ -3,8 +3,27 @@ use std::{error::Error, fs};
 use serde::Deserialize;
 
 #[derive(Debug, PartialEq, Deserialize)]
+pub struct NodeConfig {
+    pub name: String,
+    pub peers: Vec<String>,
+}
+
+#[derive(Debug, PartialEq, Deserialize)]
+pub struct RawNodes {
+    pub nodes: Vec<NodeConfig>,
+}
+
+#[derive(Debug, PartialEq, Deserialize)]
+#[serde(tag = "type")]
+pub enum NodesConfig {
+    #[serde(rename = "raw")]
+    Raw(RawNodes),
+}
+
+#[derive(Debug, PartialEq, Deserialize)]
 pub struct Config {
     pub seed: u64,
+    pub nodes_config: NodesConfig,
 }
 
 impl Config {
