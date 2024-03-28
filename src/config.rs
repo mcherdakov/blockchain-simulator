@@ -5,6 +5,7 @@ use serde::Deserialize;
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct NodeConfig {
     pub name: String,
+    pub hashrate: u64,
     pub peers: Vec<String>,
 }
 

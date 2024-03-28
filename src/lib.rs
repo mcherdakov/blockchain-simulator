@@ -21,16 +21,16 @@ pub fn run(cfg: Config) -> Result<(), Box<dyn Error>> {
         node.borrow_mut().start();
     }
 
-    sim.steps(1000);
+    sim.steps(100);
 
     for node in node_network.nodes().iter() {
         let node = node.borrow();
 
         println!(
-            "node {}:\n stats: {:?}\n storage: {:?}",
+            "node {}:\nstats: {:?}\nstorage: {:?}",
             node.id(),
             node.stats(),
-            node.storage().size(),
+            node.storage(),
         );
     }
 

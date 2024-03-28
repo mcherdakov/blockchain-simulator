@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::block::{Block, BlockID};
+use crate::block::{Block, BlockHash};
 use crate::events::{BlockData, GetData, Inv};
 use crate::miner::Uniform;
 use crate::{block_storage::BlockStorage, events::BlockMined};
@@ -23,13 +23,13 @@ pub struct Node {
 }
 
 impl Node {
-    pub fn new(ctx: SimulationContext, seed: u64) -> Self {
+    pub fn new(ctx: SimulationContext, seed: u64, genesis_block: Block) -> Self {
         let seed = seed.wrapping_add(ctx.id() as u64);
 
         Self {
             ctx,
             stats: Stats::default(),
-            block_storage: BlockStorage::new(),
+            block_storage: BlockStorage::new(genesis_block),
             miner: Uniform::new(seed, MINE_DELAY_FROM, MINE_DELAY_TO),
             peers: HashSet::new(),
         }
@@ -56,7 +56,7 @@ impl Node {
     }
 
     fn mine_block(&mut self) {
-        let mine_result = self.miner.mine();
+        let mine_result = self.miner.mine(self.block_storage.tip());
         self.ctx.emit(
             BlockMined {
                 block: mine_result.block,
@@ -67,7 +67,7 @@ impl Node {
     }
 
     fn handle_block_mined(&mut self, block: Block) {
-        let block_id = block.id.clone();
+        let block_id = block.hash.clone();
 
         self.stats.blocks_mined += 1;
         self.block_storage.add(block);
@@ -85,7 +85,7 @@ impl Node {
         self.mine_block();
     }
 
-    fn handle_inv(&mut self, block_id: BlockID, src: u32) {
+    fn handle_inv(&mut self, block_id: BlockHash, src: u32) {
         self.add_peers(&[src]);
 
         if self.block_storage.contains(&block_id) {
@@ -95,14 +95,20 @@ impl Node {
         self.ctx.emit(GetData { block_id }, src, 0.0);
     }
 
-    fn handle_get_data(&self, block_id: BlockID, src: u32) {
+    fn handle_get_data(&self, block_id: BlockHash, src: u32) {
         if let Some(block) = self.block_storage.block(&block_id) {
-            self.ctx.emit(BlockData { block }, src, 0.0);
+            self.ctx.emit(
+                BlockData {
+                    block: block.to_owned(),
+                },
+                src,
+                0.0,
+            );
         }
     }
 
     fn handle_block_data(&mut self, block: Block, src: u32) {
-        let block_id = block.id.clone();
+        let block_id = block.hash.clone();
         self.block_storage.add(block);
 
         for &peer in self.peers.iter().filter(|&&peer| peer != src) {

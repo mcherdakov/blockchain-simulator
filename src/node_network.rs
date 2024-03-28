@@ -1,5 +1,8 @@
 use dslab_core::Simulation;
+use rand::SeedableRng;
+use rand_chacha::ChaCha8Rng;
 
+use crate::block::Block;
 use crate::config::{NodesConfig, RawNodes};
 use crate::node::Node;
 use crate::Config;
@@ -39,8 +42,10 @@ impl NodeNetwork {
         let mut nodes_by_name = HashMap::new();
         let mut nodes = Vec::new();
 
+        let genesis_block = Block::genesis(&mut ChaCha8Rng::seed_from_u64(seed));
+
         for node_config in cfg.nodes.iter() {
-            let node = create_node(sim, &node_config.name, seed);
+            let node = create_node(sim, &node_config.name, seed, genesis_block.to_owned());
 
             nodes.push(node.clone());
             nodes_by_name.insert(node_config.name.clone(), node.clone());
@@ -71,8 +76,17 @@ impl NodeNetwork {
     }
 }
 
-fn create_node(sim: &mut Simulation, name: &str, seed: u64) -> Rc<RefCell<Node>> {
-    let node = Rc::new(RefCell::new(Node::new(sim.create_context(name), seed)));
+fn create_node(
+    sim: &mut Simulation,
+    name: &str,
+    seed: u64,
+    genesis_block: Block,
+) -> Rc<RefCell<Node>> {
+    let node = Rc::new(RefCell::new(Node::new(
+        sim.create_context(name),
+        seed,
+        genesis_block,
+    )));
     sim.add_handler(name, node.clone());
 
     node

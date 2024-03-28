@@ -1,4 +1,4 @@
-use crate::block::{Block, BlockID};
+use crate::block::{Block, BlockHash};
 use serde::Serialize;
 
 #[derive(Clone, Serialize)]
@@ -8,12 +8,12 @@ pub struct BlockMined {
 
 #[derive(Clone, Serialize)]
 pub struct Inv {
-    pub block_id: BlockID,
+    pub block_id: BlockHash,
 }
 
 #[derive(Clone, Serialize)]
 pub struct GetData {
-    pub block_id: BlockID,
+    pub block_id: BlockHash,
 }
 
 #[derive(Clone, Serialize)]

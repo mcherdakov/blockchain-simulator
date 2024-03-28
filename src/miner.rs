@@ -22,9 +22,9 @@ impl Uniform {
         }
     }
 
-    pub fn mine(&mut self) -> MineResult {
+    pub fn mine(&mut self, prev_block: &Block) -> MineResult {
         MineResult {
-            block: Block::random(&mut self.rng),
+            block: Block::new(&mut self.rng, prev_block),
             delay: self.rng.gen_range(self.delay_from..=self.delay_to),
         }
     }
