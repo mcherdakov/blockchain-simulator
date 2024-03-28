@@ -3,8 +3,10 @@ mod block_storage;
 mod config;
 mod events;
 mod miner;
+mod network;
 mod node;
 mod node_network;
+mod stats;
 
 use dslab_core::Simulation;
 pub use node::Node;
@@ -21,7 +23,7 @@ pub fn run(cfg: Config) -> Result<(), Box<dyn Error>> {
         node.borrow_mut().start();
     }
 
-    sim.steps(100);
+    sim.steps(50);
 
     for node in node_network.nodes().iter() {
         let node = node.borrow();

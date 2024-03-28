@@ -27,7 +27,7 @@ impl Debug for BlockStorage {
 
         writeln!(f)?;
 
-        for i in 0..max_height {
+        for i in 0..=max_height {
             match blocks_by_height.get(&i) {
                 Some(blocks) => {
                     writeln!(f, "{i}: {:?}", blocks)?;
@@ -55,7 +55,7 @@ impl BlockStorage {
     }
 
     pub fn add(&mut self, block: Block) {
-        if self.tip_hash.eq(&block.prev_hash) {
+        if self.tip_hash == block.prev_hash {
             self.tip_hash = block.hash.clone();
         }
 

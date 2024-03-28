@@ -1,37 +1,43 @@
+use std::cell::RefCell;
 use std::collections::HashSet;
+use std::rc::Rc;
 
 use crate::block::{Block, BlockHash};
 use crate::events::{BlockData, GetData, Inv};
-use crate::miner::Uniform;
+use crate::miner::UniformMiner;
+use crate::network::UniformNetwork;
+use crate::stats::NodeStats;
 use crate::{block_storage::BlockStorage, events::BlockMined};
 use dslab_core::{cast, Event, EventHandler, Id, SimulationContext};
 
 const MINE_DELAY_FROM: f64 = 1.0;
-const MINE_DELAY_TO: f64 = 2.0;
-
-#[derive(Default, Debug)]
-pub struct Stats {
-    pub blocks_mined: u32,
-}
+const MINE_DELAY_TO: f64 = 10.0;
 
 pub struct Node {
     ctx: SimulationContext,
-    stats: Stats,
-    block_storage: BlockStorage,
-    miner: Uniform,
+    stats: NodeStats,
     peers: HashSet<Id>,
+    block_storage: BlockStorage,
+    miner: UniformMiner,
+    network: Rc<RefCell<UniformNetwork>>,
 }
 
 impl Node {
-    pub fn new(ctx: SimulationContext, seed: u64, genesis_block: Block) -> Self {
-        let seed = seed.wrapping_add(ctx.id() as u64);
+    pub fn new(
+        ctx: SimulationContext,
+        seed: u64,
+        genesis_block: Block,
+        network: Rc<RefCell<UniformNetwork>>,
+    ) -> Self {
+        let seed = seed.wrapping_add((ctx.id() + 1) as u64);
 
         Self {
             ctx,
-            stats: Stats::default(),
-            block_storage: BlockStorage::new(genesis_block),
-            miner: Uniform::new(seed, MINE_DELAY_FROM, MINE_DELAY_TO),
+            stats: NodeStats::default(),
             peers: HashSet::new(),
+            block_storage: BlockStorage::new(genesis_block),
+            miner: UniformMiner::new(seed, MINE_DELAY_FROM, MINE_DELAY_TO),
+            network,
         }
     }
 
@@ -43,7 +49,7 @@ impl Node {
         self.mine_block();
     }
 
-    pub fn stats(&self) -> &Stats {
+    pub fn stats(&self) -> &NodeStats {
         &self.stats
     }
 
@@ -67,18 +73,22 @@ impl Node {
     }
 
     fn handle_block_mined(&mut self, block: Block) {
-        let block_id = block.hash.clone();
+        if self.block_storage.tip().hash != block.prev_hash {
+            return;
+        }
 
-        self.stats.blocks_mined += 1;
+        let block_hash = block.hash.clone();
+
+        self.stats.block_mined(&block_hash);
         self.block_storage.add(block);
 
         for &peer in self.peers.iter() {
-            self.ctx.emit(
+            self.network.borrow_mut().send(
+                &self.ctx,
                 Inv {
-                    block_id: block_id.clone(),
+                    block_id: block_hash.clone(),
                 },
                 peer,
-                0.0,
             );
         }
 
@@ -92,17 +102,19 @@ impl Node {
             return;
         }
 
-        self.ctx.emit(GetData { block_id }, src, 0.0);
+        self.network
+            .borrow_mut()
+            .send(&self.ctx, GetData { block_id }, src);
     }
 
     fn handle_get_data(&self, block_id: BlockHash, src: u32) {
         if let Some(block) = self.block_storage.block(&block_id) {
-            self.ctx.emit(
+            self.network.borrow_mut().send(
+                &self.ctx,
                 BlockData {
                     block: block.to_owned(),
                 },
                 src,
-                0.0,
             );
         }
     }
@@ -112,14 +124,16 @@ impl Node {
         self.block_storage.add(block);
 
         for &peer in self.peers.iter().filter(|&&peer| peer != src) {
-            self.ctx.emit(
+            self.network.borrow_mut().send(
+                &self.ctx,
                 Inv {
                     block_id: block_id.clone(),
                 },
                 peer,
-                0.0,
             );
         }
+
+        self.mine_block();
     }
 }
 

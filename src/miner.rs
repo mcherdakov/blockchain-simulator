@@ -7,13 +7,13 @@ pub struct MineResult {
     pub delay: f64,
 }
 
-pub struct Uniform {
+pub struct UniformMiner {
     rng: ChaCha8Rng,
     delay_from: f64,
     delay_to: f64,
 }
 
-impl Uniform {
+impl UniformMiner {
     pub fn new(seed: u64, delay_from: f64, delay_to: f64) -> Self {
         Self {
             rng: ChaCha8Rng::seed_from_u64(seed),

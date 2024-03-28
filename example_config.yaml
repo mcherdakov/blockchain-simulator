@@ -7,10 +7,4 @@ nodes_config:
       peers: ["2"]
     - name: "2"
       hashrate: 10
-      peers: ["3"]
-    - name: "3"
-      hashrate: 10
-      peers: ["4"]
-    - name: "4"
-      hashrate: 10
       peers: ["1"]

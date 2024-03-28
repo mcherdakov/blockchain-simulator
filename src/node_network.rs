@@ -4,6 +4,7 @@ use rand_chacha::ChaCha8Rng;
 
 use crate::block::Block;
 use crate::config::{NodesConfig, RawNodes};
+use crate::network::UniformNetwork;
 use crate::node::Node;
 use crate::Config;
 use std::cell::RefCell;
@@ -11,6 +12,9 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::Display;
 use std::rc::Rc;
+
+const NETWORK_DELAY_FROM: f64 = 1.0;
+const NETWORK_DELAY_TO: f64 = 10.0;
 
 #[derive(Debug, Clone)]
 pub struct InvalidPeerError;
@@ -44,8 +48,20 @@ impl NodeNetwork {
 
         let genesis_block = Block::genesis(&mut ChaCha8Rng::seed_from_u64(seed));
 
+        let network = Rc::new(RefCell::new(UniformNetwork::new(
+            seed,
+            NETWORK_DELAY_FROM,
+            NETWORK_DELAY_TO,
+        )));
+
         for node_config in cfg.nodes.iter() {
-            let node = create_node(sim, &node_config.name, seed, genesis_block.to_owned());
+            let node = create_node(
+                sim,
+                &node_config.name,
+                seed,
+                genesis_block.clone(),
+                Rc::clone(&network),
+            );
 
             nodes.push(node.clone());
             nodes_by_name.insert(node_config.name.clone(), node.clone());
@@ -81,11 +97,13 @@ fn create_node(
     name: &str,
     seed: u64,
     genesis_block: Block,
+    network: Rc<RefCell<UniformNetwork>>,
 ) -> Rc<RefCell<Node>> {
     let node = Rc::new(RefCell::new(Node::new(
         sim.create_context(name),
         seed,
         genesis_block,
+        network,
     )));
     sim.add_handler(name, node.clone());
 
